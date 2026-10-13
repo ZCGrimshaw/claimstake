@@ -816,8 +816,10 @@
   App.ui.code = ''; App.ui.oerr = '';
   async function initOnline() {
     try {
-      if (!window.claude || !window.claude.use) return;
-      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      let db, user;
+      if (window.claude && window.claude.use) [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      else if (window.CLAIM_CFG && window.ClaimSupa) { const sb = window.ClaimSupa(window.CLAIM_CFG); db = sb.db; user = sb.user; }
+      else return;
       if (!db || !user) return;
       const uid = await user.id();
       if (!uid) return;

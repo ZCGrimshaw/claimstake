@@ -1,7 +1,8 @@
 const fs=require('fs');
 const r=f=>fs.readFileSync(__dirname+'/'+f,'utf8');
 const cover='window.CLAIM_COVER="data:image/webp;base64,'+fs.readFileSync(__dirname+'/assets/cover.webp').toString('base64')+'";\n';
-const js=cover+['src/data.js','src/engine.js','src/bots.js','ui/art.js','ui/ui.js'].map(r).join('\n;\n').replace(/<\/script>/g,'<\\/script>');
+const cfg=process.argv.includes('--web')?'window.CLAIM_CFG={url:"https://iebutksrypqzohumllal.supabase.co",key:"sb_publishable_VxxsgQuKKQM807zeScKZow_G0WYVnAg"};\n':'';
+const js=cfg+cover+['src/data.js','src/engine.js','src/bots.js','ui/art.js','ui/supa.js','ui/ui.js'].map(r).join('\n;\n').replace(/<\/script>/g,'<\\/script>');
 const head=`<title>Claimstake</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Zilla+Slab:wght@600;700&display=swap">
