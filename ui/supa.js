@@ -18,8 +18,8 @@ window.ClaimSupa = function (cfg) {
   async function rest(path, opt) {
     const s = await auth();
     const r = await fetch(U + '/rest/v1/claim_docs' + path, Object.assign({}, opt, { headers: Object.assign({ apikey: K, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' }, (opt && opt.headers) || {}) }));
-    if (!r.ok) { const e = new Error('http ' + r.status); e.code = r.status; throw e; }
-    return r.status === 204 ? null : r.json();
+    if (!r.ok) { let m = ''; try { m = (await r.json()).message || ''; } catch (x) { /* ignore */ } const e = new Error(m || 'http ' + r.status); e.code = r.status + (m ? ' ' + m.slice(0, 60) : ''); e.status = r.status; throw e; }
+    const t = await r.text(); return t ? JSON.parse(t) : null;
   }
   const snapOf = row => ({ id: row.path.split('/')[1], exists: true, data: () => row.data });
   const MISSING = { exists: false, data: () => undefined };
@@ -32,7 +32,7 @@ window.ClaimSupa = function (cfg) {
           const out = await fetcher(), sig = JSON.stringify(out.sig);
           if (!stop && sig !== last) { last = sig; cb(out.snap); }
         }
-      } catch (e) { if (!stop && e.code === 401) { sess = null; } else if (!stop && e.code && e.code !== 'net') err && err(e); }
+      } catch (e) { if (!stop && e.status === 401) { sess = null; } else if (!stop && e.code && e.code !== 'net') err && err(e); }
       if (!stop) timer = setTimeout(tick, document.hidden ? 5000 : ms);
     };
     tick();
@@ -44,7 +44,12 @@ window.ClaimSupa = function (cfg) {
       const get = async () => { const rows = await rest(q + '&select=path,data,updated_at'); return rows.length ? snapOf(rows[0]) : MISSING; };
       return {
         get,
-        async set(data) { await rest('?on_conflict=path', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ path: p, data }) }); },
+        async set(data) {
+          const hd = { Prefer: 'return=representation' };
+          const upd = await rest(q, { method: 'PATCH', headers: hd, body: JSON.stringify({ data }) });
+          if (upd && upd.length) return;
+          await rest('', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ path: p, data }) });
+        },
         onSnapshot(cb, err) {
           return (function () {
             let stop = false, lastSig = null, timer = null;
@@ -56,7 +61,7 @@ window.ClaimSupa = function (cfg) {
                   const sig = rows.length ? rows[0].updated_at : 'none';
                   if (sig !== lastSig) { const s = await get(); lastSig = sig; if (!stop) cb(s); }
                 }
-              } catch (e) { if (e.code === 401) sess = null; else if (!stop && e.code) err && err(e); }
+              } catch (e) { if (e.status === 401) sess = null; else if (!stop && e.code) err && err(e); }
               if (!stop) timer = setTimeout(tick, document.hidden ? 5000 : 1200);
             };
             tick();

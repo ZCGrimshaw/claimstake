@@ -603,6 +603,19 @@
     oresume() { netResume(); },
     orejoin() { netRejoin(); },
     ostart() { netHostStart(); },
+    oseat(el) {
+      const n = App.net; if (!n || n.role !== 'host' || n.meta.status !== 'lobby') return;
+      const x = n.meta.seats[+el.dataset.i]; if (!x || x.uid || +el.dataset.i === 0) return;
+      if (x.kind === 'bot') { x.lvl = x.level; x.kind = 'human'; x.name = ''; delete x.level; }
+      else { x.kind = 'bot'; x.level = x.lvl || 2; x.name = BOTNAMES[(+el.dataset.i - 1) % 3]; }
+      netPublish(); render();
+    },
+    ocopy() {
+      const n = App.net; if (!n) return;
+      const url = location.href.split('#')[0].split('?')[0] + '?join=' + n.meta.code;
+      const done = () => toast('Invite link copied', 'ok');
+      try { navigator.clipboard.writeText(url).then(done, () => toast(url, 'ok')); } catch (e) { toast(url, 'ok'); }
+    },
     oleave() { netLeave(); App.view = App.s ? 'game' : 'online'; if (!App.s) App.view = 'online'; render(); },
     sound() { prof.sound = !prof.sound; saveProf(); if (prof.sound) sfx('coin'); render(); },
     theme() { const cur = document.documentElement.getAttribute('data-theme'); const dark = cur ? cur === 'dark' : !matchMedia('(prefers-color-scheme: light)').matches; setTheme(dark ? 'light' : 'dark'); },
@@ -824,7 +837,9 @@
       const uid = await user.id();
       if (!uid) return;
       Net.db = db; Net.uid = String(uid); Net.ready = true;
-      if (App.view === 'menu') render();
+      const jc = /[?&]join=([A-Za-z]{4})/.exec(location.search);
+      if (jc && !App.net && !App.s) { App.view = 'online'; App.ui.code = jc[1].toUpperCase(); netJoin(App.ui.code); }
+      else if (App.view === 'menu') render();
     } catch (e) { /* online play simply stays hidden */ }
   }
   const myName = () => (prof.name || 'Player').trim().slice(0, 14) || 'Player';
@@ -994,18 +1009,18 @@
           <p class="faint">Hosting uses your New game setup from the main menu: ${esc(sum)}. Seats marked Friend wait for a real player.</p></div>
         <div class="panel"><h3>Join a friend</h3><div class="field"><label>Game code</label><input type="text" data-f="ocode" value="${esc(App.ui.code)}" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-size:22px;letter-spacing:.2em"></div>
           <div class="row" style="margin-top:12px"><button class="btn" data-act="ojoin">Join</button></div>
-          <p class="faint">Friends need access to this page. The owner can invite them from the page's Share menu, as Contributors.</p></div></div>
+          <p class="faint">${window.claude ? 'Friends need access to this page. The owner can invite them from the page\'s Share menu, as Contributors.' : 'Ask your host for the 4-letter code, or open the invite link they send.'}</p></div></div>
         <div class="row"><button class="btn ghost" data-act="tomenu">Back</button></div>`;
     }
     const g = n.meta, host = n.role === 'host';
-    const seats = g.seats.map((x, i) => `<div class="stat"><b><span style="color:${PCOL[i]}">●</span> ${x.kind === 'bot' ? esc(x.name) : x.uid ? esc(x.name) : 'Waiting for a friend'}</b><span>${x.kind === 'bot' ? LVL[x.level] + ' bot' : x.uid === n.myUid ? 'You' + (i === 0 ? ' (host)' : '') : x.uid ? 'Joined' : 'Open seat'}</span></div>`).join('');
+    const seats = g.seats.map((x, i) => `<div class="stat"><b><span style="color:${PCOL[i]}">●</span> ${x.kind === 'bot' ? esc(x.name) : x.uid ? esc(x.name) : 'Waiting for a friend'}</b><span>${x.kind === 'bot' ? LVL[x.level] + ' bot' : x.uid === n.myUid ? 'You' + (i === 0 ? ' (host)' : '') : x.uid ? 'Joined' : 'Open seat'}</span>${host && i > 0 && !x.uid && g.status === 'lobby' ? `<button class="btn ghost small" data-act="oseat" data-i="${i}">${x.kind === 'bot' ? 'Make this a friend seat' : 'Switch to a bot'}</button>` : ''}</div>`).join('');
     const open = g.seats.filter(x => x.kind === 'human' && !x.uid).length;
     return `<div class="top"><div class="brand">${I('stake')}Claimstake</div></div>
       <div class="panel" style="display:grid;gap:14px;max-width:720px;margin-inline:auto;width:100%"><h3>Game lobby</h3>
         <div style="text-align:center"><div class="faint">Game code</div><div style="font-family:var(--font-d);font-size:64px;font-weight:700;letter-spacing:.18em">${esc(g.code)}</div></div>
         <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${seats}</div>${err}
-        <p class="muted" style="margin:0">${host ? (open ? 'Waiting for ' + open + ' more player' + (open > 1 ? 's' : '') + '. Send them the code: they open this page, choose Play online, then Join.' : 'Everyone is here. Start when ready.') : 'Waiting for the host to start.'}</p>
-        <div class="row wrap">${host ? `<button class="btn" data-act="ostart" ${open ? 'disabled' : ''}>Start game</button>` : ''}<button class="btn ghost" data-act="oleave">Leave</button></div></div>`;
+        <p class="muted" style="margin:0">${host ? (open ? 'Waiting for ' + open + ' more player' + (open > 1 ? 's' : '') + '. Send them the invite link, or the code: they open this page, choose Play online, then Join.' : 'Everyone is here. Start when ready. To invite someone, switch a bot seat to a friend seat.') : 'Waiting for the host to start.'}</p>
+        <div class="row wrap">${host ? `<button class="btn" data-act="ostart" ${open ? 'disabled' : ''}>Start game</button>` : ''}<button class="btn ghost" data-act="ocopy">Copy invite link</button><button class="btn ghost" data-act="oleave">Leave</button></div></div>`;
   }
 
   // ------------------------------------------------------------ boot
