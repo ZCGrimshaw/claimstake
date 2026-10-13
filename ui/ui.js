@@ -597,7 +597,7 @@
       App.ui = Object.assign(App.ui, { lastRound: 0, tab: 'play', sel: null, payKey: '', curtainFor: -1, evSeen: sv.s.events.length, seenUid: sv.s.uidn - 1, modal: null, confetti: false });
       B.runBots(App.s); render();
     },
-    online() { App.view = 'online'; App.ui.oerr = ''; render(); },
+    online() { const mm = App.menu; if (!mm.seats.slice(1, mm.n).some(x => x.kind === 'human')) mm.seats[1].kind = 'human'; App.view = 'online'; App.ui.oerr = ''; render(); },
     ohost() { netHost(); },
     ojoin() { netJoin(App.ui.code); },
     oresume() { netResume(); },
@@ -1005,8 +1005,10 @@
         <div class="menu"><div class="panel"><h3>Play online</h3>
           <p class="muted" style="margin-top:0">Everyone opens this same page. One person hosts and keeps their tab open; friends join with a 4-letter code.</p>
           <div class="field"><label>Your name</label><input type="text" data-f="oname" value="${esc(prof.name || '')}" placeholder="Player" maxlength="14"></div>${err}
-          <div class="row wrap" style="margin-top:12px"><button class="btn" data-act="ohost">Host a game</button><button class="btn ghost" data-act="oresume">Resume my hosted game</button><button class="btn ghost" data-act="orejoin">Rejoin a game</button></div>
-          <p class="faint">Hosting uses your New game setup from the main menu: ${esc(sum)}. Seats marked Friend wait for a real player.</p></div>
+          <div class="field"><label>Players</label><div class="seg">${[2, 3, 4].map(k => `<button class="${m.n === k ? 'on' : ''}" data-act="pn" data-n="${k}">${k}</button>`).join('')}</div></div>
+          <div class="grp" style="display:grid;gap:8px;margin:10px 0"><div class="faint">Seat 1: you</div>${Array.from({ length: m.n - 1 }, (_, j) => { const i = j + 1, st = m.seats[i]; return `<div class="row" style="gap:8px"><span class="faint" style="min-width:48px">Seat ${i + 1}</span><select data-seat="${i}" data-f="kind" aria-label="Seat ${i + 1}" style="width:auto;flex:1;min-width:150px">${['human', 1, 2, 3].map(k => `<option value="${k}" ${st.kind === k ? 'selected' : ''}>${k === 'human' ? 'Friend (joins with the code)' : 'Bot: ' + LVL[k]}</option>`).join('')}</select></div>`; }).join('')}</div>
+          <div class="row wrap"><button class="btn" data-act="ohost">Host a game</button><button class="btn ghost" data-act="oresume">Resume my hosted game</button><button class="btn ghost" data-act="orejoin">Rejoin a game</button></div>
+          <p class="faint">Rules options come from the New game screen on the main menu. You can still change seats in the lobby.</p></div>
         <div class="panel"><h3>Join a friend</h3><div class="field"><label>Game code</label><input type="text" data-f="ocode" value="${esc(App.ui.code)}" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;font-size:22px;letter-spacing:.2em"></div>
           <div class="row" style="margin-top:12px"><button class="btn" data-act="ojoin">Join</button></div>
           <p class="faint">${window.claude ? 'Friends need access to this page. The owner can invite them from the page\'s Share menu, as Contributors.' : 'Ask your host for the 4-letter code, or open the invite link they send.'}</p></div></div>
