@@ -390,6 +390,36 @@
     }).join('');
     return `<div class="table"><div class="hd"><h2>Auctions</h2><span class="muted">Waiting for ${esc(who.join(' and ') || 'the next step')}${cur && cur.k !== 'rail' && cur.k !== 'pickRes' && now ? ' (' + what + ' ' + esc(now.tile.name) + ')' : ''}.</span></div><p class="hint">The bidding is over. Winners now pay and build one at a time. Moves appear here as soon as they happen.</p><div class="aucs">${cards}</div></div>`;
   }
+
+  // ---- buildings chart (under the player's town): own buildings or the whole set, sortable by every stat
+  const BTYPE_ORD = { R: 0, I: 1, C: 2, S: 3 }, BERA_ORD = { '-': 0, A: 1, 'A/B': 2, B: 3, C: 4 };
+  const outSum = o => o ? Object.keys(o).reduce((t, k) => t + (typeof o[k] === 'number' ? o[k] : 1), 0) : 0;
+  const BSORT = {
+    name: b => b.name, type: b => BTYPE_ORD[b.type] * 100, era: b => BERA_ORD[b.era] == null ? 9 : BERA_ORD[b.era],
+    cost: b => b.costList.length, pts: b => b.pts || 0, income: b => outSum(b.auto),
+    slots: b => (b.s1 ? 1 : 0) + (b.s2 ? 1 : 0) + (b.dbl ? 1 : 0),
+  };
+  const BSORT_LABEL = [['name', 'Name'], ['type', 'Type'], ['era', 'Era'], ['cost', 'Cost'], ['pts', 'Points'], ['income', 'Income'], ['slots', 'Worker slots']];
+  function bldTablePanel(s, v) {
+    const view = App.ui.bview || 'mine', bs = App.ui.bs || { k: 'era', d: 1 };
+    const counts = {}; v.blds.forEach(b => { counts[b.id] = (counts[b.id] || 0) + 1; });
+    let list = view === 'all' ? D.BUILDINGS.slice() : Object.keys(counts).map(id => BMAP[id]);
+    const key = BSORT[bs.k];
+    list.sort((a, b) => { const x = key(a), y = key(b); const c = typeof x === 'string' ? x.localeCompare(y) : x - y; return (c || a.name.localeCompare(b.name)) * bs.d; });
+    const btns = BSORT_LABEL.map(([k, l]) => `<button class="${bs.k === k ? 'on' : ''}" data-act="bsort" data-k="${k}" aria-pressed="${bs.k === k}" data-tip="Sort by ${l.toLowerCase()}. Click again to reverse.">${l}${bs.k === k ? (bs.d > 0 ? ' &#9650;' : ' &#9660;') : ''}</button>`).join('');
+    const rows = list.map(bd => {
+      const n = counts[bd.id] || 0;
+      const slots = [bd.s1 ? `<div><span class="faint">1 worker</span> ${outChips(bd.s1)}</div>` : '', bd.s2 ? `<div><span class="faint">1 worker</span> ${outChips(bd.s2)}</div>` : '', bd.dbl ? `<div><span class="faint">2 workers</span> ${outChips(bd.dbl)}</div>` : ''].join('');
+      const notes = [bd.onBuild ? `<div><span class="faint">When built</span> ${outChips(bd.onBuild)}</div>` : '', ...(bd.final || []).map(f => `<div><span class="faint">Final</span> ${finalTxt(f)}</div>`), bd.special ? `<div class="faint">${SPECIAL[bd.special]}</div>` : ''].join('');
+      return `<tr class="${n ? 'own' : ''}" data-act="bld" data-id="${bd.id}"><td class="bn"><span class="th">${A.sprite(bd.id)}</span><span>${bd.name}${n > 1 ? ' <b>&times;' + n + '</b>' : ''}${view === 'all' && n ? ' <span class="tag confirmed">owned</span>' : ''}</span></td>
+        <td><span class="ty ${bd.type}">${I(bd.type)}${bd.type}</span></td><td>${ERA[bd.era] ? bd.era : 'Start'}</td><td>${costHTML(bd)}</td><td class="num">${bd.pts || ''}</td>
+        <td>${outChips(bd.auto)}</td><td>${slots}</td><td>${notes}</td>${view === 'all' ? `<td class="num">${bd.id === 'cabin' ? '' : s.bsup[bd.id] != null ? s.bsup[bd.id] : 0}</td>` : ''}</tr>`;
+    }).join('');
+    return `<div class="panel btable"><h3>Your buildings <span class="faint" style="font-weight:500;font-size:13px">${view === 'all' ? 'All ' + list.length + ' in the game' : v.blds.length + ' built'}</span></h3>
+      <div class="row wrap" style="justify-content:space-between;gap:8px"><div class="seg" role="group" aria-label="Which buildings"><button class="${view === 'mine' ? 'on' : ''}" data-act="bview" data-v="mine">Mine</button><button class="${view === 'all' ? 'on' : ''}" data-act="bview" data-v="all">All buildings</button></div>
+      <div class="sortbar" role="group" aria-label="Sort buildings"><span class="faint">Sort by</span>${btns}</div></div>
+      <div class="tblwrap"><table class="bt"><thead><tr><th>Building</th><th>Type</th><th>Era</th><th>Cost</th><th>Points</th><th>Always</th><th>Worker slots</th><th>Notes</th>${view === 'all' ? '<th>Left</th>' : ''}</tr></thead><tbody>${rows || '<tr><td colspan="8" class="faint">No buildings yet.</td></tr>'}</tbody></table></div></div>`;
+  }
   function tablePanel(s, p) {
     const c = curNeed();
     if (!c && s.phase === 'bid') return bidPanel(s, p);
@@ -496,7 +526,7 @@
     const dawnHTML = dawn == null ? '' : `<div class="dawnveil" style="--d:-${dawn}ms"></div><div class="dawntitle" style="--d:-${dawn}ms"><small>${STAGE[s.round <= 4 ? 'A' : s.round <= 8 ? 'B' : 'C']}</small><b>Round ${s.round}</b></div>`;
     const tab = App.ui.tab, pane = (id, html) => `<section class="pane ${tab === id ? 'on' : ''}" data-pane="${id}">${html}</section>`;
     return `${dawnHTML}<div class="top-wrap">${topBar(s)}</div>${oppsStrip(s, v)}
-      <div class="main"><div class="col">${pane('play', tablePanel(s, v))}${pane('town', sceneHTML(v, { dawn }) + '<div class="panel"><h3>Your buildings</h3><div class="mini">' + v.blds.map(b => `<span class="mb" data-act="bld" data-id="${b.id}">${A.sprite(b.id)}${BMAP[b.id].name}</span>`).join('') + '</div></div>')}</div>
+      <div class="main"><div class="col">${pane('play', tablePanel(s, v))}${pane('town', sceneHTML(v, { dawn }) + bldTablePanel(s, v))}</div>
       <div class="col">${pane('market', ledgerPanel(s, v) + marketPanel(s, v, on))}${pane('lots', lotsPanel(s) + logPanel(s))}</div></div>
       <nav class="tabs">${[['play', 'Play'], ['town', 'Town'], ['market', 'Market'], ['lots', 'Lots']].map(t => `<button class="${tab === t[0] ? 'on' : ''}" data-act="tab" data-t="${t[0]}">${t[1]}</button>`).join('')}</nav>`;
   }
@@ -637,6 +667,8 @@
     // game chrome
     tab(el) { App.ui.tab = el.dataset.t; render(); window.scrollTo(0, 0); },
     bld(el) { App.ui.modal = { type: 'bld', id: el.dataset.id }; render(); },
+    bsort(el) { const k = el.dataset.k, cur = App.ui.bs || { k: 'era', d: 1 }; App.ui.bs = { k, d: cur.k === k ? -cur.d : 1 }; render(); },
+    bview(el) { App.ui.bview = el.dataset.v; render(); },
     opp(el) { App.ui.modal = { type: 'opp', p: +el.dataset.p }; render(); },
     gmenu() { App.ui.modal = { type: 'menu' }; render(); },
     rules() { App.ui.modal = { type: 'rules' }; render(); },
