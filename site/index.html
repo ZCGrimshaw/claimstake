@@ -2546,7 +2546,7 @@ window.ClaimSupa = function (cfg) {
         ${!t.noBuild && !HS.canBuildAny(s, p, t) ? '<div class="faint">You cannot afford to build here.</div>' : ''}
         <div class="ladder">${lad}</div></div>`;
     }).join('');
-    return `<div class="table"><div class="hd"><h2>Auctions</h2><span class="muted">${myTurn ? 'Your turn: bid or pass.' : 'Waiting.'}</span></div>
+    return `<div class="table"><div class="hd"><h2>Auctions</h2><span class="muted">${myTurn ? 'Your turn: bid or pass.' : 'Waiting for ' + esc(s.bidTurn != null && s.players[s.bidTurn] ? s.players[s.bidTurn].name : 'the next bidder') + '. You can still watch the auctions.'}</span></div>
       <p class="hint">Raise a bid to take the lead; if you are outbid you get to bid again. Winning an auction lets you build. Passing moves you along the rail but ends your bidding this round.</p>
       <div class="aucs">${aucs}</div>
       ${myTurn ? `<div class="panel" data-tip="Passing ends your bidding this round, but moves you along the rail for a reward. Wages are already paid, so passing never costs silver."><h3>${I('rail')} Pass and advance the railroad</h3>${railTrack(p)}<p class="hint">Next space gives: ${HS.railChoices(s, p).map(k => RAILNAME[k]).join(', ') || 'nothing'}.</p>${rewardButtons(s, p, 'pass', 'Pass (no reward)')}</div>` : ''}</div>`;
@@ -2588,8 +2588,21 @@ window.ClaimSupa = function (cfg) {
       <div class="stats"><div class="stat"><b>${I('vp')}${sc.total}</b><span>Score now</span></div><div class="stat"><b>${sc.rarePts}</b><span>From ${sc.rare} rare goods</span></div><div class="stat ${sc.pen ? 'bad' : ''}"><b>${-sc.pen}</b><span>Debt penalty</span></div><div class="stat"><b>${sc.bonus}</b><span>Building bonuses</span></div></div>
       <div class="row"><button class="btn" data-act="finalDone">Close the ledger</button></div></div>`;
   }
+  // read-only view of the auctions while another player resolves theirs (pays, builds, takes a rail reward)
+  function watchPanel(s, p) {
+    const who = HS.needs(s).map(x => s.players[x.p].name).filter((n, i, a) => a.indexOf(n) === i);
+    const cur = s.steps[0], now = cur && cur.auction != null ? s.auctions[cur.auction] : null;
+    const what = cur ? ({ payBid: 'paying for', build: 'choosing a building on', extra: 'choosing an extra building', rail: 'advancing on the rail', pickRes: 'picking a resource' }[cur.k] || 'resolving') : 'resolving';
+    const cards = s.auctions.map(a => {
+      const t = a.tile, holder = a.holder === 'N' ? 'Neutral bidder' : a.holder == null ? 'No bids' : a.holder === p.id ? 'You' : s.players[a.holder].name;
+      return `<div class="auc ${a.holder === p.id ? 'mine' : ''}"><div class="tn">${esc(t.name)}</div><div class="row wrap">${t.types.map(typeChip).join('')}${tileBonusChips(t)}</div><div class="bidnow">${a.bid ? `<span class="coin ${a.holder === 'N' ? 'neutral' : ''}">${a.bid}</span><span>${holder}</span>` : '<span class="faint">No bids</span>'}</div>${now && now.idx === a.idx ? '<div class="faint">Resolving now</div>' : ''}</div>`;
+    }).join('');
+    return `<div class="table"><div class="hd"><h2>Auctions</h2><span class="muted">Waiting for ${esc(who.join(' and ') || 'the next step')}${cur && cur.k !== 'rail' && cur.k !== 'pickRes' && now ? ' (' + what + ' ' + esc(now.tile.name) + ')' : ''}.</span></div><p class="hint">The bidding is over. Winners now pay and build one at a time. Moves appear here as soon as they happen.</p><div class="aucs">${cards}</div></div>`;
+  }
   function tablePanel(s, p) {
     const c = curNeed();
+    if (!c && s.phase === 'bid') return bidPanel(s, p);
+    if (!c && s.phase === 'resolve') return watchPanel(s, p);
     if (!c) {
       const who = HS.needs(s).map(x => s.players[x.p].name).filter((n, i, a) => a.indexOf(n) === i);
       return `<div class="table"><div class="hd"><h2>Waiting</h2></div><p class="hint">${who.length ? 'Waiting for ' + esc(who.join(' and ')) + '.' : 'Working...'} ${App.net ? 'Moves sync as soon as everyone has chosen.' : ''}</p></div>`;
