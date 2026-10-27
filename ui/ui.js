@@ -472,11 +472,12 @@
     const c = curNeed();
     return `<div class="opps">${s.players.filter(p => p.id !== v.id).map(p => {
       const rail = Array.from({ length: 5 }, (_, i) => `<i class="${i < p.advances ? 'on' : ''}"></i>`).join('');
-      const res = RES.filter(r => p.res[r]).map(r => `<span>${I(r)}${p.res[r]}</span>`).join('');
+      const hid = s.opts.hiddenInfo !== false;
+      const res = hid ? '' : RES.filter(r => p.res[r]).map(r => `<span>${I(r)}${p.res[r]}</span>`).join('');
       const status = s.phase === 'bid' ? (p.passed ? 'passed' : p.hasBid ? 'leading' : '') : '';
       return `<div class="opp ${c && c.p === p.id ? 'turn' : ''}" data-act="opp" data-p="${p.id}" role="button" tabindex="0"><div class="nm"><span><span style="color:${PCOL[p.id]}">●</span> ${esc(p.name)}</span><span class="faint">${p.kind === 'bot' ? LVL[p.level] : 'Human'}${status ? ', ' + status : ''}</span></div>
-        <div class="st"><span>${I('silver')}${p.silver}</span><span>${I('vp')}${p.vp}</span><span>${I('worker')}${p.workers}</span><span>${I('trade')}${p.trade}</span>${p.debt ? `<span style="color:var(--bad)">${I('debt')}${p.debt}</span>` : ''}<span>${p.blds.length} bld</span></div>
-        <div class="st">${res || '<span class="faint">no goods</span>'}<span class="pips" data-tip="Rail track: ${p.advances} of 5 spaces passed.">${rail}</span></div></div>`;
+        <div class="st">${hid ? '' : `<span>${I('silver')}${p.silver}</span>`}<span>${I('vp')}${p.vp}</span><span>${I('worker')}${p.workers}</span>${hid ? '' : `<span>${I('trade')}${p.trade}</span>`}${p.debt ? `<span style="color:var(--bad)">${I('debt')}${p.debt}</span>` : ''}<span>${p.blds.length} bld</span></div>
+        <div class="st">${hid ? '<span class="faint" data-tip="Silver, goods and trade tokens are hidden until the game ends.">money and goods hidden</span>' : res || '<span class="faint">no goods</span>'}<span class="pips" data-tip="Rail track: ${p.advances} of 5 spaces passed.">${rail}</span></div></div>`;
     }).join('')}</div>`;
   }
   function renderGame() {
@@ -574,7 +575,7 @@
     const m = App.ui.modal, s = App.s; if (!m) return '';
     let body = '';
     if (m.type === 'bld') body = `<h2>${BMAP[m.id].name}</h2>${bcard(m.id, { left: s ? s.bsup[m.id] : null })}<div class="row"><button class="btn" data-act="close">Close</button></div>`;
-    else if (m.type === 'opp') { const p = s.players[m.p]; body = `<h2>${esc(p.name)}</h2>${sceneHTML(p, { assign: false })}<div class="row wrap">${RES.filter(r => p.res[r]).map(r => resChip(r, p.res[r])).join('') || '<span class="faint">No goods</span>'}</div><div class="row"><button class="btn" data-act="close">Close</button></div>`; }
+    else if (m.type === 'opp') { const p = s.players[m.p]; body = `<h2>${esc(p.name)}</h2>${sceneHTML(p, { assign: false })}<div class="row wrap">${s.opts.hiddenInfo !== false ? '<span class="faint">Their silver, goods and trade tokens are hidden until the game ends.</span>' : RES.filter(r => p.res[r]).map(r => resChip(r, p.res[r])).join('') || '<span class="faint">No goods</span>'}</div><div class="row"><button class="btn" data-act="close">Close</button></div>`; }
     else if (m.type === 'menu') body = `<h2>Menu</h2><div class="row wrap"><button class="btn" data-act="close">Resume</button><button class="btn ghost" data-act="rules">Rules</button><button class="btn ghost" data-act="tomenu">Save and leave</button><button class="btn warn" data-act="abandon">Abandon game</button></div>`;
     else if (m.type === 'rules') body = `<h2>Rules in this game</h2><div style="display:grid;gap:6px">${D.RULE_NOTES.map(r => `<div class="row" style="align-items:flex-start"><span class="tag ${r[0]}">${r[0] === 'confirmed' ? 'rule' : 'my call'}</span><span>${r[1]}</span></div>`).join('')}</div><div class="row"><button class="btn" data-act="close">Close</button></div>`;
     return `<div class="veil" data-act="veil"><div class="sheet ${m.type === 'opp' ? 'wide' : ''}" role="dialog" aria-modal="true">${body}</div></div>`;
@@ -783,8 +784,8 @@
     const list = Object.keys(cnt).map(id => BMAP[id].name + (cnt[id] > 1 ? ' x' + cnt[id] : '')).join(', ');
     const res = RES.filter(r => p.res[r]).map(r => p.res[r] + ' ' + r).join(', ') || 'none';
     return `<b>${esc(p.name)}</b> <span class="faint">${p.kind === 'bot' ? LVL[p.level] + ' bot' : 'Human'}</span>
-      <div>Silver ${p.silver}, trade tokens ${p.trade}, VP ${p.vp}, workers ${p.workers}, spur lines ${p.lines}, IOUs ${p.debt}.</div>
-      <div>Goods: ${res}.</div><div>Buildings: ${esc(list)}.</div><div>Rail: ${p.advances} of 5 spaces.</div><div class="faint">Click to see their town.</div>`;
+      ${s.opts.hiddenInfo !== false ? `<div>VP ${p.vp}, workers ${p.workers}, spur lines ${p.lines}, IOUs ${p.debt}.</div><div class="faint">Silver, goods and trade tokens are hidden.</div>` : `<div>Silver ${p.silver}, trade tokens ${p.trade}, VP ${p.vp}, workers ${p.workers}, spur lines ${p.lines}, IOUs ${p.debt}.</div>
+      <div>Goods: ${res}.</div>`}<div>Buildings: ${esc(list)}.</div><div>Rail: ${p.advances} of 5 spaces.</div><div class="faint">Click to see their town.</div>`;
   }
   function tipFor(el) {
     if (!el || !el.closest) return null;
