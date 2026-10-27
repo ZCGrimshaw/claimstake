@@ -164,7 +164,7 @@
       if (!legal.length) return;
       const bid = legal[0];
       let cands;
-      if (auc.tile.noBuild) cands = [null]; else cands = HS.eligible(s, auc.tile);
+      if (auc.tile.noBuild) cands = [null]; else cands = HS.eligible(s, auc.tile, false, p);
       cands.forEach(id => {
         let val = tileBonusValue(auc.tile, s, p, P), cost = 0, tradeCost = 0;
         if (id) {
@@ -317,7 +317,7 @@
       }
       case 'build': case 'extra': {
         const auc = s.auctions[need.auction];
-        const ids = need.kind === 'extra' ? Object.keys(s.bsup).filter(id => s.bsup[id] > 0) : HS.eligible(s, auc.tile);
+        const ids = need.kind === 'extra' ? HS.eligible(s, auc.tile, true, p) : HS.eligible(s, auc.tile, false, p);
         let best = null;
         ids.forEach(id => {
           const q = HS.quoteBuild(s, p, id);
@@ -416,7 +416,7 @@
     const auc = s.auctions[auctionIdx];
     if (!auc) return null;
     let best = null;
-    const cands = auc.tile.noBuild ? [null] : HS.eligible(s, auc.tile);
+    const cands = auc.tile.noBuild ? [null] : HS.eligible(s, auc.tile, false, p);
     cands.forEach(id => {
       let val = tileBonusValue(auc.tile, s, p, P);
       let cost = 0;

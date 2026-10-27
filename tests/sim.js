@@ -10,6 +10,7 @@ function check(s){
   const sum=(f)=>s.players.reduce((a,p)=>a+f(p),0);
   for(const r of D.RES){ const init=s.opts.limitedSupply?D.SUPPLY[r]:999; if(s.sup[r]+sum(p=>p.res[r])!==init) errs.push('res conservation '+r+' '+(s.sup[r]+sum(p=>p.res[r]))+' vs '+init); }
   if(s.sup.trade+sum(p=>p.trade)!==36) errs.push('trade conservation');
+  if(s.opts.oneEach!==false) s.players.forEach(p=>{const seen={}; p.blds.forEach(b=>{ if(seen[b.id]) errs.push('duplicate building '+b.id+' for '+p.name); seen[b.id]=1; });});
   if(s.sup.debt+sum(p=>p.debt)!==36) errs.push('debt conservation');
   if(s.sup.worker+sum(p=>p.workers)!==25) errs.push('worker conservation '+(s.sup.worker+sum(p=>p.workers)));
   if(s.sup.line+sum(p=>p.lines)!==27) errs.push('line conservation');

@@ -505,6 +505,9 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
     { key: 'hiddenInfo', label: 'Opponents\' goods and money', def: true,
       choices: [[true, 'Hidden (like the board game)'], [false, 'Open to everyone']], tag: 'confirmed',
       help: 'In the board game each player keeps their silver, goods and trade tokens behind a screen. Hidden: you see an opponent\'s buildings, workers, victory points, debt and rail progress, but not their silver, goods or trade tokens. Everything is revealed when the game ends.' },
+    { key: 'oneEach', label: 'Copies of a building per player', def: true,
+      choices: [[true, 'One of each (like the board game)'], [false, 'As many as the supply allows']], tag: 'confirmed',
+      help: 'In the board game you can never own two of the same building. With this on, a building you already own is hidden from your build choices and the advisor.' },
     { key: 'advisor', label: 'Show advisor hints', def: true,
       choices: [[true, 'On'], [false, 'Off']], tag: 'ui',
       help: 'Shows the bot advisor\'s estimate of what an auction is worth to you.' },
@@ -664,8 +667,10 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
   }
 
   // ------------------------------------------------------------ queries
-  function eligible(s, tile, anyType) {
-    return Object.keys(s.bsup).filter(id => s.bsup[id] > 0 && (anyType || tile.types.includes(BMAP[id].type)));
+  // one of each building per player (option oneEach, default on): a player cannot take a second copy
+  function ownsB(p, id) { return !!p && p.blds.some(b => b.id === id); }
+  function eligible(s, tile, anyType, p) {
+    return Object.keys(s.bsup).filter(id => s.bsup[id] > 0 && (anyType || tile.types.includes(BMAP[id].type)) && !(p && s.opts.oneEach !== false && ownsB(p, id)));
   }
 
   function slotsOf(bd) {
@@ -845,7 +850,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
   function currentMinBid(auc) { return LADDER.find(x => x > auc.bid); }
 
   function canBuildAny(s, p, tile) {
-    return eligible(s, tile).some(id => quoteBuild(s, p, id).ok);
+    return eligible(s, tile, false, p).some(id => quoteBuild(s, p, id).ok);
   }
 
   // most silver this player could possibly raise: purse, gold, goods sold (1 trade each) and every IOU left
@@ -1133,7 +1138,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
       if (st.k === 'build') {
         const auc = s.auctions[st.auction];
         const cap = fundsCeiling(s, p);
-        const ok = eligible(s, auc.tile).some(id => { const q = quoteBuild(s, p, id); return q.ok && q.S <= cap; });
+        const ok = eligible(s, auc.tile, false, p).some(id => { const q = quoteBuild(s, p, id); return q.ok && q.S <= cap; });
         if (!ok) {
           p.silver += st.refund; log(s, `${p.name} cannot build on ${auc.tile.name}; the bid is refunded.`);
           ev(s, 'refund', p.id, st.refund);
@@ -1149,7 +1154,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
         }
       } else if (st.k === 'extra') {
         const cap2 = fundsCeiling(s, p);
-        const ok = Object.keys(s.bsup).some(id => { if (!(s.bsup[id] > 0)) return false; const q = quoteBuild(s, p, id); return q.ok && q.S <= cap2; });
+        const ok = Object.keys(s.bsup).some(id => { if (!(s.bsup[id] > 0) || (s.opts.oneEach !== false && ownsB(p, id))) return false; const q = quoteBuild(s, p, id); return q.ok && q.S <= cap2; });
         if (!ok) { s.steps.shift(); continue; }
       } else if (st.k === 'rail') {
         if (!railChoices(s, p).length) { advanceRail(s, p); s.steps.shift(); continue; }
@@ -1201,6 +1206,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
     const auc = s.auctions[st.auction];
     const id = a.id;
     if (!BMAP[id] || !(s.bsup[id] > 0)) return err('that building is not available');
+    if (s.opts.oneEach !== false && ownsB(p, id)) return err('you already own ' + BMAP[id].name + ' (one of each building)');
     if (st.k === 'build' && !auc.tile.types.includes(BMAP[id].type)) return err('wrong building type for this tile');
     const q = quoteBuild(s, p, id);
     if (!q.ok) return err(q.why);
@@ -1475,7 +1481,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
       if (!legal.length) return;
       const bid = legal[0];
       let cands;
-      if (auc.tile.noBuild) cands = [null]; else cands = HS.eligible(s, auc.tile);
+      if (auc.tile.noBuild) cands = [null]; else cands = HS.eligible(s, auc.tile, false, p);
       cands.forEach(id => {
         let val = tileBonusValue(auc.tile, s, p, P), cost = 0, tradeCost = 0;
         if (id) {
@@ -1628,7 +1634,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
       }
       case 'build': case 'extra': {
         const auc = s.auctions[need.auction];
-        const ids = need.kind === 'extra' ? Object.keys(s.bsup).filter(id => s.bsup[id] > 0) : HS.eligible(s, auc.tile);
+        const ids = need.kind === 'extra' ? HS.eligible(s, auc.tile, true, p) : HS.eligible(s, auc.tile, false, p);
         let best = null;
         ids.forEach(id => {
           const q = HS.quoteBuild(s, p, id);
@@ -1727,7 +1733,7 @@ window.CLAIM_COVER="data:image/webp;base64,UklGRnb4AgBXRUJQVlA4IGr4AgCwmwmdASqAB
     const auc = s.auctions[auctionIdx];
     if (!auc) return null;
     let best = null;
-    const cands = auc.tile.noBuild ? [null] : HS.eligible(s, auc.tile);
+    const cands = auc.tile.noBuild ? [null] : HS.eligible(s, auc.tile, false, p);
     cands.forEach(id => {
       let val = tileBonusValue(auc.tile, s, p, P);
       let cost = 0;
@@ -2599,7 +2605,7 @@ window.ClaimSupa = function (cfg) {
     const aucs = s.auctions.map(a => {
       const t = a.tile, legal = HS.legalBids(s, p.id, a.idx);
       const holder = a.holder === 'N' ? 'Neutral bidder' : a.holder == null ? '' : a.holder === p.id ? 'You' : s.players[a.holder].name;
-      const mini = t.noBuild ? '' : HS.eligible(s, t).map(id => {
+      const mini = t.noBuild ? '' : HS.eligible(s, t, false, p).map(id => {
         const q = HS.quoteBuild(s, p, id);
         return `<span class="mb ${q.ok ? 'ok' : 'no'}" data-act="bld" data-id="${id}">${A.sprite(id)}${BMAP[id].name}</span>`;
       }).join('') || '<span class="faint">No buildings available</span>';
@@ -2626,7 +2632,7 @@ window.ClaimSupa = function (cfg) {
   }
   function buildPanel(s, p, st, extra) {
     const auc = s.auctions[st.auction];
-    const ids = HS.eligible(s, auc.tile, extra);
+    const ids = HS.eligible(s, auc.tile, extra, p);
     const sel = App.ui.sel && ids.includes(App.ui.sel) ? App.ui.sel : null;
     const cards = ids.map(id => {
       const q = HS.quoteBuild(s, p, id);

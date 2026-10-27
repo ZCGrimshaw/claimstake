@@ -127,8 +127,10 @@
   }
 
   // ------------------------------------------------------------ queries
-  function eligible(s, tile, anyType) {
-    return Object.keys(s.bsup).filter(id => s.bsup[id] > 0 && (anyType || tile.types.includes(BMAP[id].type)));
+  // one of each building per player (option oneEach, default on): a player cannot take a second copy
+  function ownsB(p, id) { return !!p && p.blds.some(b => b.id === id); }
+  function eligible(s, tile, anyType, p) {
+    return Object.keys(s.bsup).filter(id => s.bsup[id] > 0 && (anyType || tile.types.includes(BMAP[id].type)) && !(p && s.opts.oneEach !== false && ownsB(p, id)));
   }
 
   function slotsOf(bd) {
@@ -308,7 +310,7 @@
   function currentMinBid(auc) { return LADDER.find(x => x > auc.bid); }
 
   function canBuildAny(s, p, tile) {
-    return eligible(s, tile).some(id => quoteBuild(s, p, id).ok);
+    return eligible(s, tile, false, p).some(id => quoteBuild(s, p, id).ok);
   }
 
   // most silver this player could possibly raise: purse, gold, goods sold (1 trade each) and every IOU left
@@ -596,7 +598,7 @@
       if (st.k === 'build') {
         const auc = s.auctions[st.auction];
         const cap = fundsCeiling(s, p);
-        const ok = eligible(s, auc.tile).some(id => { const q = quoteBuild(s, p, id); return q.ok && q.S <= cap; });
+        const ok = eligible(s, auc.tile, false, p).some(id => { const q = quoteBuild(s, p, id); return q.ok && q.S <= cap; });
         if (!ok) {
           p.silver += st.refund; log(s, `${p.name} cannot build on ${auc.tile.name}; the bid is refunded.`);
           ev(s, 'refund', p.id, st.refund);
@@ -612,7 +614,7 @@
         }
       } else if (st.k === 'extra') {
         const cap2 = fundsCeiling(s, p);
-        const ok = Object.keys(s.bsup).some(id => { if (!(s.bsup[id] > 0)) return false; const q = quoteBuild(s, p, id); return q.ok && q.S <= cap2; });
+        const ok = Object.keys(s.bsup).some(id => { if (!(s.bsup[id] > 0) || (s.opts.oneEach !== false && ownsB(p, id))) return false; const q = quoteBuild(s, p, id); return q.ok && q.S <= cap2; });
         if (!ok) { s.steps.shift(); continue; }
       } else if (st.k === 'rail') {
         if (!railChoices(s, p).length) { advanceRail(s, p); s.steps.shift(); continue; }
@@ -664,6 +666,7 @@
     const auc = s.auctions[st.auction];
     const id = a.id;
     if (!BMAP[id] || !(s.bsup[id] > 0)) return err('that building is not available');
+    if (s.opts.oneEach !== false && ownsB(p, id)) return err('you already own ' + BMAP[id].name + ' (one of each building)');
     if (st.k === 'build' && !auc.tile.types.includes(BMAP[id].type)) return err('wrong building type for this tile');
     const q = quoteBuild(s, p, id);
     if (!q.ok) return err(q.why);

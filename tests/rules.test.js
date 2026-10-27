@@ -421,5 +421,12 @@ t('plain tile option strips bonuses', () => {
 t('unlimited supply option', () => { const s = mk(2, { limitedSupply: false }); ok(s.sup.wood >= 999); });
 t('supply conservation across serialisation', () => { const s = mk(3); const c = HS.clone(s); eq(c.sup, s.sup); });
 
+t('one of each building: owned building is not eligible and cannot be built', () => {
+  const s = mk(2); const p = s.players[0]; const tile = { types: ['R', 'I', 'C', 'S'] };
+  ok(HS.eligible(s, tile, false, p).includes('wheat') || HS.eligible(s, tile, false, p).length > 0);
+  const id = HS.eligible(s, tile, false, p)[0]; p.blds.push({ id, uid: 999 });
+  ok(!HS.eligible(s, tile, false, p).includes(id)); ok(HS.eligible(s, tile, false, s.players[1]).includes(id));
+  s.opts.oneEach = false; ok(HS.eligible(s, tile, false, p).includes(id));
+});
 console.log(`rules: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

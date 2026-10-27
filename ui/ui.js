@@ -323,7 +323,7 @@
     const aucs = s.auctions.map(a => {
       const t = a.tile, legal = HS.legalBids(s, p.id, a.idx);
       const holder = a.holder === 'N' ? 'Neutral bidder' : a.holder == null ? '' : a.holder === p.id ? 'You' : s.players[a.holder].name;
-      const mini = t.noBuild ? '' : HS.eligible(s, t).map(id => {
+      const mini = t.noBuild ? '' : HS.eligible(s, t, false, p).map(id => {
         const q = HS.quoteBuild(s, p, id);
         return `<span class="mb ${q.ok ? 'ok' : 'no'}" data-act="bld" data-id="${id}">${A.sprite(id)}${BMAP[id].name}</span>`;
       }).join('') || '<span class="faint">No buildings available</span>';
@@ -350,7 +350,7 @@
   }
   function buildPanel(s, p, st, extra) {
     const auc = s.auctions[st.auction];
-    const ids = HS.eligible(s, auc.tile, extra);
+    const ids = HS.eligible(s, auc.tile, extra, p);
     const sel = App.ui.sel && ids.includes(App.ui.sel) ? App.ui.sel : null;
     const cards = ids.map(id => {
       const q = HS.quoteBuild(s, p, id);
