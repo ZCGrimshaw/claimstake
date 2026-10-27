@@ -186,7 +186,8 @@
 
   // ------------------------------------------------------------ html bits
   function resChip(r, q) { return `<span class="chip">${I(r)}<b class="num">${q}</b></span>`; }
-  function outChips(o) {
+  const OUTW = { silver: 'silver', vp: 'VP', trade: 'trade token', wood: 'wood', food: 'food', steel: 'steel', gold: 'gold', copper: 'copper', livestock: 'livestock', worker: 'worker', debt: 'IOU' };
+  function outChips(o, words) {
     if (!o) return '';
     const parts = [];
     for (const k in o) {
@@ -196,7 +197,7 @@
       else if (k === 'rail') parts.push(`<span class="chip">${I('rail')} +${v}</span>`);
       else if (k === 'extra') parts.push('<span class="chip">extra building</span>');
       else if (k === 'resource') parts.push(`<span class="chip">any resource${v > 1 ? ' x' + v : ''}</span>`);
-      else parts.push(`<span class="chip">${I(k)}<b class="num">${v}</b></span>`);
+      else parts.push(`<span class="chip">${I(k)}<b class="num">${v}</b>${words && OUTW[k] ? `<span class="cw">${OUTW[k]}${v > 1 && k !== 'silver' && k !== 'vp' && k !== 'wood' && k !== 'food' && k !== 'steel' && k !== 'gold' && k !== 'copper' ? 's' : ''}</span>` : ''}</span>`);
     }
     return parts.join('');
   }
@@ -206,13 +207,14 @@
   function bcard(id, o) {
     o = o || {}; const bd = BMAP[id];
     const L = [];
-    if (bd.auto) L.push(`<div>Always: ${outChips(bd.auto)}</div>`);
-    if (bd.s1) L.push(`<div>1 worker: ${outChips(bd.s1)}</div>`);
-    if (bd.s2) L.push(`<div>1 worker: ${outChips(bd.s2)}</div>`);
-    if (bd.dbl) L.push(`<div>2 workers: ${outChips(bd.dbl)}</div>`);
-    if (bd.onBuild) L.push(`<div>When built: ${outChips(bd.onBuild)}</div>`);
-    (bd.final || []).forEach(f => L.push(`<div>Final: ${finalTxt(f)}</div>`));
-    if (bd.special) L.push(`<div class="faint">${SPECIAL[bd.special]}</div>`);
+    const row = (k, lab, body) => `<div class="fr ${k}"><span class="fl">${lab}</span><span class="fb">${body}</span></div>`;
+    if (bd.auto) L.push(row('auto', 'Every round', outChips(bd.auto, 1)));
+    if (bd.s1) L.push(row('work', I('worker') + ' 1 worker', outChips(bd.s1, 1)));
+    if (bd.s2) L.push(row('work', I('worker') + ' 1 worker', outChips(bd.s2, 1)));
+    if (bd.dbl) L.push(row('work', I('worker') + I('worker') + ' 2 workers', outChips(bd.dbl, 1)));
+    if (bd.onBuild) L.push(row('built', 'When built', outChips(bd.onBuild, 1)));
+    (bd.final || []).forEach(f => L.push(row('fin', 'Game end', finalTxt(f))));
+    if (bd.special) L.push(row('spec', 'Special', SPECIAL[bd.special]));
     const tag = o.tag || 'div';
     return `<${tag} class="bcard ${o.cls || ''}" ${o.attrs || ''}>
       <div class="art">${A.sprite(id)}</div>

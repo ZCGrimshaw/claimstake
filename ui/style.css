@@ -361,3 +361,15 @@ details.fold > summary { cursor: pointer; font-family: var(--font-d); font-weigh
 
 .goods-h { font-size: 13px; font-weight: 700; color: var(--ink3); margin: 10px 0 4px; }
 .stats.goods .stat.zero { opacity: .5; }
+
+/* readable building abilities */
+.bcard .fx { gap: 5px; font-size: 14px; }
+.fr { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 6px; align-items: center; padding: 4px 6px; border-radius: 8px; background: var(--panel); border-left: 4px solid var(--line); }
+.fr .fl { font-size: 12px; font-weight: 800; color: var(--ink3); display: flex; align-items: center; gap: 3px; flex-wrap: wrap; line-height: 1.2; }
+.fr .fl .ic { width: 15px; height: 15px; }
+.fr .fb { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; color: var(--ink); font-weight: 600; line-height: 1.3; }
+.fr.auto { border-left-color: #6aa86a; } .fr.work { border-left-color: var(--amber); } .fr.built { border-left-color: #5b8fd0; } .fr.fin { border-left-color: #b88acb; } .fr.spec { border-left-color: var(--ink3); }
+.fr .chip { font-size: 14px; font-weight: 700; padding: 3px 9px; background: var(--panel2); }
+.fr .chip .ic { width: 20px; height: 20px; }
+.fr .chip .cw { font-weight: 600; color: var(--ink2); }
+.fr .chip .num { font-size: 15px; }
