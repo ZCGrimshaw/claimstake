@@ -411,26 +411,27 @@
 
   // ------------------------------------------------------------ side panels
   function marketPanel(s, p, on) {
+    const TC = `<span class="tc" aria-label="costs 1 trade token">&minus;1${I('trade')}</span>`;
     const rows = RES.map(r => {
       const cl = r === 'copper' || r === 'livestock';
       const price = cl ? `1 ${I('gold')}` : `${PRICE[r]} ${I('silver')}`;
       const canBuy = on && p.trade >= 1 && s.sup[r] > 0 && (cl ? p.res.gold >= 1 : p.silver >= PRICE[r]);
       const canSell = on && p.trade >= 1 && p.res[r] >= 1 && (!cl || s.sup.gold >= 1);
       const why = (what) => !on ? 'Not your decision right now.' : p.trade < 1 ? 'You need a trade token.' : what;
-      const buyWhy = canBuy ? 'Buy 1 ' + r + ' for ' + (cl ? '1 gold' : PRICE[r] + ' silver') + ' and 1 trade token.' : why(s.sup[r] <= 0 ? 'The supply of ' + r + ' is empty.' : cl ? 'You need a gold to pay.' : 'You need ' + PRICE[r] + ' silver.');
-      const sellWhy = canSell ? 'Sell 1 ' + r + ' for ' + (cl ? '1 gold' : PRICE[r] + ' silver') + (HS.has(p, 'drygoods') && !cl ? ' (+1 from Dry Goods)' : '') + ', 1 trade token. Scores 1 VP.' : why(p.res[r] < 1 ? 'You have none to sell.' : 'No gold left in the supply.');
-      return `<div class="resrow">${I(r)}<span>${cap(r)} <span class="faint">${price}</span> <span class="faint">(${s.sup[r] > 900 ? 'plenty' : s.sup[r] + ' left'})</span></span><span class="have num">${p.res[r]}</span><span class="mk"><button data-tip="${buyWhy}" data-act="buy" data-r="${r}" ${canBuy ? '' : 'disabled'}>Buy</button><button data-tip="${sellWhy}" data-act="sell" data-r="${r}" ${canSell ? '' : 'disabled'}>Sell</button></span></div>`;
+      const buyWhy = canBuy ? 'Buy 1 ' + r + ' for ' + (cl ? '1 gold' : PRICE[r] + ' silver') + ' and spend 1 trade token (it is used up, not gained).' : why(s.sup[r] <= 0 ? 'The supply of ' + r + ' is empty.' : cl ? 'You need a gold to pay.' : 'You need ' + PRICE[r] + ' silver.');
+      const sellWhy = canSell ? 'Sell 1 ' + r + ' for ' + (cl ? '1 gold' : PRICE[r] + ' silver') + (HS.has(p, 'drygoods') && !cl ? ' (+1 from Dry Goods)' : '') + '. Spends 1 trade token (not gained). Scores 1 VP.' : why(p.res[r] < 1 ? 'You have none to sell.' : 'No gold left in the supply.');
+      return `<div class="resrow">${I(r)}<span>${cap(r)} <span class="faint">${price}</span> <span class="faint">(${s.sup[r] > 900 ? 'plenty' : s.sup[r] + ' left'})</span></span><span class="have num">${p.res[r]}</span><span class="mk"><button data-tip="${buyWhy}" data-act="buy" data-r="${r}" ${canBuy ? '' : 'disabled'}>Buy ${TC}</button><button data-tip="${sellWhy}" data-act="sell" data-r="${r}" ${canSell ? '' : 'disabled'}>Sell ${TC}</button></span></div>`;
     }).join('');
     const extras = [];
-    extras.push(`<button class="btn small ghost" data-tip="Hire a worker: costs 1 trade token and 1 food. Every worker costs 1 silver in wages each round, so only hire if you have a slot for them." data-act="hire" ${on && p.trade >= 1 && p.res.food >= 1 && s.sup.worker > 0 ? '' : 'disabled'}>Hire worker (1 ${I('trade')} + 1 ${I('food')})</button>`);
+    extras.push(`<button class="btn small ghost" data-tip="Hire a worker: spends 1 trade token and 1 food. Every worker costs 1 silver in wages each round, so only hire if you have a slot for them." data-act="hire" ${on && p.trade >= 1 && p.res.food >= 1 && s.sup.worker > 0 ? '' : 'disabled'}>Hire worker (&minus;1${I('trade')} &minus;1${I('food')})</button>`);
     if (HS.has(p, 'bazaar')) {
-      extras.push(`<button class="btn small ghost" data-tip="Bazaar: spend 1 trade token to turn 1 wood into 1 food." data-act="convert" data-from="wood" ${on && p.trade >= 1 && p.res.wood >= 1 && s.sup.food > 0 ? '' : 'disabled'}>Wood to food</button>`);
-      extras.push(`<button class="btn small ghost" data-tip="Bazaar: spend 1 trade token to turn 1 food into 1 steel." data-act="convert" data-from="food" ${on && p.trade >= 1 && p.res.food >= 1 && s.sup.steel > 0 ? '' : 'disabled'}>Food to steel</button>`);
+      extras.push(`<button class="btn small ghost" data-tip="Bazaar: spend 1 trade token (not gained) to turn 1 wood into 1 food." data-act="convert" data-from="wood" ${on && p.trade >= 1 && p.res.wood >= 1 && s.sup.food > 0 ? '' : 'disabled'}>Wood to food ${TC}</button>`);
+      extras.push(`<button class="btn small ghost" data-tip="Bazaar: spend 1 trade token (not gained) to turn 1 food into 1 steel." data-act="convert" data-from="food" ${on && p.trade >= 1 && p.res.food >= 1 && s.sup.steel > 0 ? '' : 'disabled'}>Food to steel ${TC}</button>`);
     }
     extras.push(`<button class="btn small ghost" data-tip="Borrow: take 1 IOU and 2 silver now. Unpaid IOUs cost 1, 2, 3... VP in total at the end, so the second one hurts more." data-act="debt" data-n="1" ${on && s.sup.debt > 0 ? '' : 'disabled'}>Take IOU (+2 ${I('silver')})</button>`);
     extras.push(`<button class="btn small ghost" data-tip="Repay 1 IOU for 5 silver." data-act="repay" data-gold="0" ${on && p.debt >= 1 && p.silver >= 5 ? '' : 'disabled'}>Repay (5 ${I('silver')})</button>`);
     extras.push(`<button class="btn small ghost" data-tip="Repay 1 IOU with 1 gold cube." data-act="repay" data-gold="1" ${on && p.debt >= 1 && p.res.gold >= 1 ? '' : 'disabled'}>Repay (1 ${I('gold')})</button>`);
-    return `<div class="panel"><h3>Market</h3>${rows}<p class="faint" style="margin:6px 0">Each trade uses 1 trade token. Each sale scores 1 VP.</p><div class="row wrap">${extras.join('')}</div></div>`;
+    return `<div class="panel"><h3>Market</h3><div class="notice tnote">Every buy, sell, hire or conversion <b>spends</b> 1 ${I('trade')} trade token. You have <b>${p.trade}</b>. You never gain tokens by trading.</div>${rows}<p class="faint" style="margin:6px 0">Each sale also scores 1 VP.</p><div class="row wrap">${extras.join('')}</div></div>`;
   }
   function ledgerPanel(s, p) {
     const sc = HS.scoreOf(s, p);

@@ -297,3 +297,9 @@ details.fold > summary { cursor: pointer; font-family: var(--font-d); font-weigh
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .hero .cover { display: block; width: min(100%, 940px); height: auto; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); }
 .hero .cover { width: auto; max-width: 100%; max-height: 64vh; }
+
+.tc { display: inline-flex; align-items: center; gap: 1px; margin-left: 4px; font-size: 12px; font-weight: 800; color: var(--bad); }
+.tc .ic { width: 15px; height: 15px; }
+.mk button:hover:not(:disabled) .tc { color: inherit; }
+.mk button:disabled .tc { color: inherit; }
+.tnote { margin: 0 0 6px; font-size: 13px; }
