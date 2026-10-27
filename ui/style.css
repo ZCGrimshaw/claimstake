@@ -323,3 +323,9 @@ details.fold > summary { cursor: pointer; font-family: var(--font-d); font-weigh
 .bt td.num { font-variant-numeric: tabular-nums; font-weight: 700; }
 @media (max-width: 960px) { .bt .th { display: none; } .bt { min-width: 720px; } }
 .scene .wk { pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+
+.needs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 2px; font-size: 13px; }
+.nc { display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel2); font-weight: 700; font-variant-numeric: tabular-nums; }
+.nc .ic { width: 18px; height: 18px; }
+.nc.ok { border-color: var(--good, #4a8); } .nc.short { border-color: var(--bad); color: var(--bad); }
+.notice .needs { margin: 0 0 6px; }

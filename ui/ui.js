@@ -342,6 +342,12 @@
       <div class="aucs">${aucs}</div>
       ${myTurn ? `<div class="panel" data-tip="Passing ends your bidding this round, but moves you along the rail for a reward. Wages are already paid, so passing never costs silver."><h3>${I('rail')} Pass and advance the railroad</h3>${railTrack(p)}<p class="hint">Next space gives: ${HS.railChoices(s, p).map(k => RAILNAME[k]).join(', ') || 'nothing'}.</p>${rewardButtons(s, p, 'pass', 'Pass (no reward)')}</div>` : ''}</div>`;
   }
+  // material costs against what the player holds: icon have/need, red when short
+  function needChips(q, p) {
+    const L = RES.filter(r => q.need[r] > 0).map(r => { const h = p.res[r] || 0, ok = h >= q.need[r];
+      return `<span class="nc ${ok ? 'ok' : 'short'}" data-tip="${cap(r)}: need ${q.need[r]}, you have ${h}${ok ? '' : '. You can buy the rest with trade tokens.'}">${I(r)}<b>${h}/${q.need[r]}</b></span>`; });
+    return L.length ? `<div class="needs"><span class="faint">Materials (have/need)</span>${L.join('')}</div>` : '<div class="needs faint">No materials needed</div>';
+  }
   function buildPanel(s, p, st, extra) {
     const auc = s.auctions[st.auction];
     const ids = HS.eligible(s, auc.tile, extra);
@@ -349,7 +355,7 @@
     const cards = ids.map(id => {
       const q = HS.quoteBuild(s, p, id);
       return bcard(id, { tag: 'button', cls: (sel === id ? 'sel ' : '') + (q.ok ? '' : 'dis'), attrs: `data-act="pick" data-id="${id}"`, left: s.bsup[id],
-        foot: `<div class="${q.ok ? 'faint' : ''}" style="font-size:13px">${q.ok ? (q.T ? `Buys goods: ${q.T} trade, ${q.S} silver` : 'You have everything') : '<span style="color:var(--bad)">' + q.why + '</span>'}</div>` });
+        foot: needChips(q, p) + `<div class="${q.ok ? 'faint' : ''}" style="font-size:13px">${q.ok ? (q.T ? `Buys goods: ${q.T} trade, ${q.S} silver` : 'You have everything') : '<span style="color:var(--bad)">' + q.why + '</span>'}</div>` });
     }).join('');
     let pay = '';
     if (sel) {
@@ -357,7 +363,7 @@
       const extraBid = extra && s.opts.trainExtra === 'bid' ? st.bid : 0, total = q.S + extraBid;
       const goldFree = Math.max(0, p.res.gold + q.buy.gold - q.need.gold - q.goldCL);
       const buys = ['wood', 'food', 'steel', 'gold'].filter(r => q.buy[r]).map(r => `${q.buy[r]} ${r}`).concat(['copper', 'livestock'].filter(r => q.clBuy[r]).map(r => `${q.clBuy[r]} ${r} (1 gold each)`));
-      pay = `<div class="notice">${BMAP[sel].name}: ${buys.length ? 'you will buy ' + buys.join(', ') + ' using ' + q.T + ' trade token' + (q.T > 1 ? 's' : '') + ' and ' + q.S + ' silver' : 'paid from your stock'}${extraBid ? ', plus the bid again (' + extraBid + ')' : ''}.${q.landingPaid.copper + q.landingPaid.livestock ? ' River Landing: gold stands in for copper or livestock.' : ''}</div>`
+      pay = `<div class="notice">${needChips(q, p)}${BMAP[sel].name}: ${buys.length ? 'you will buy ' + buys.join(', ') + ' using ' + q.T + ' trade token' + (q.T > 1 ? 's' : '') + ' and ' + q.S + ' silver' : 'paid from your stock'}${extraBid ? ', plus the bid again (' + extraBid + ')' : ''}.${q.landingPaid.copper + q.landingPaid.livestock ? ' River Landing: gold stands in for copper or livestock.' : ''}</div>`
         + payPanel(p, total, { act: 'buildGo', title: 'Silver for the build', btn: 'Build ' + BMAP[sel].name, maxGold: goldFree, maxTrades: p.trade - q.T, blocked: !q.ok });
     }
     return `<div class="table"><div class="hd"><h2>${extra ? 'Extra building' : 'Build on ' + auc.tile.name}</h2><span class="muted">${extra ? 'Junction Depot lets you build one more of any type.' : 'Choose a ' + auc.tile.types.map(t => D.TYPES[t]).join(' or ') + ' building.'}</span></div>
