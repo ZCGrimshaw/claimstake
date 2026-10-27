@@ -482,6 +482,7 @@
       <div class="stat"><b>${I('worker')}<span class="num">${p.workers}</span></b><span>Workers</span></div>
       <div class="stat"><b>${I('line')}<span class="num">${p.lines}</span></b><span>Spur lines</span></div>
       <div class="stat ${p.debt ? 'bad' : ''}"><b>${I('debt')}<span class="num">${p.debt}</span></b><span>IOUs</span></div></div>
+      <div class="goods-h">Goods</div><div class="stats goods">${RES.map(r => `<div class="stat ${p.res[r] ? '' : 'zero'}" data-tip="${cap(r)}: ${p.res[r]}"><b>${I(r)}<span class="num">${p.res[r]}</span></b><span>${cap(r)}</span></div>`).join('')}</div>
       <p class="faint" style="margin:8px 0 0">Score if the game ended now: <b class="num" style="color:var(--ink)">${sc.total}</b></p></div>`;
   }
   function lotsPanel(s) {

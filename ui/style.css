@@ -358,3 +358,6 @@ details.fold > summary { cursor: pointer; font-family: var(--font-d); font-weigh
 .mxh { font-size: 13px; font-weight: 700; color: var(--ink3); margin-bottom: 4px; }
 .market .btn.small { min-height: 38px; font-size: 14px; }
 @media (max-width: 520px) { .mrow { grid-template-columns: 40px minmax(0, 1fr) auto; } .mhave { display: none; } .mico { width: 40px; height: 40px; } .mrow .mk button { min-width: 58px; } }
+
+.goods-h { font-size: 13px; font-weight: 700; color: var(--ink3); margin: 10px 0 4px; }
+.stats.goods .stat.zero { opacity: .5; }
