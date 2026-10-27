@@ -243,7 +243,7 @@
       row.forEach((x, k) => {
         const px = sx + k * cw, py = base - 100.8, bd = BMAP[x.b.id];
         const rise = x.b.uid > App.ui.seenUid ? ' rise' : '';
-        g += `<g class="bld${rise}" data-act="bld" data-id="${x.b.id}" tabindex="0" role="button" aria-label="${bd.name}">${A.sprite(x.b.id).replace('<svg ', `<svg x="${px}" y="${py}" width="120" height="108" `)}<text x="${px + 60}" y="${base + 12}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" opacity=".92" style="paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:2.5px">${bd.name}</text></g>`;
+        g += `<g class="bld${rise}" data-act="bld" data-id="${x.b.id}" tabindex="0" role="button" aria-label="${bd.name}">${A.sprite(x.b.id).replace('<svg ', `<svg x="${px}" y="${py}" width="120" height="108" `)}<text x="${px + 60}" y="${base + 12}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" opacity=".92" style="paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:2.5px">${bd.name}</text>${(() => { const a = (p.assign || {})[x.b.uid] || {}, n = (a.s1 || 0) + (a.s2 || 0) + (a.dbl || 0); let h = ''; for (let w = 0; w < n; w++) h += `<g class="wk"><ellipse cx="${px + 60 + (w - (n - 1) / 2) * 24}" cy="${base - 3}" rx="11" ry="3.5" fill="rgba(0,0,0,.35)"/><use href="#i-worker" x="${px + 60 + (w - (n - 1) / 2) * 24 - 14}" y="${base - 33}" width="28" height="28"/></g>`; return h; })()}</g>`;
       });
     }
     if (o.assign !== false && p.workers) {
