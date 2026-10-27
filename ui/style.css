@@ -329,3 +329,32 @@ details.fold > summary { cursor: pointer; font-family: var(--font-d); font-weigh
 .nc .ic { width: 18px; height: 18px; }
 .nc.ok { border-color: var(--good, #4a8); } .nc.short { border-color: var(--bad); color: var(--bad); }
 .notice .needs { margin: 0 0 6px; }
+
+/* market */
+.mhead { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.mbal { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+.mbal .ml { font-size: 12px; color: var(--ink3); font-weight: 700; }
+.mbal b { font-size: 24px; display: flex; align-items: center; gap: 6px; line-height: 1.1; }
+.mbal .ic { width: 28px; height: 28px; }
+.mrows { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; }
+.mrow { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.mrow.has { border-color: var(--amber); background: var(--panel2); }
+.mico { width: 48px; height: 48px; border-radius: 10px; background: var(--panel2); display: grid; place-items: center; }
+.mrow.has .mico { background: var(--panel); }
+.mico .ic { width: 34px; height: 34px; vertical-align: 0; }
+.minfo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.minfo b { font-family: var(--font-d); font-size: 16px; }
+.minfo .faint { font-size: 12px; }
+.bar { display: block; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 3px; max-width: 120px; }
+.bar u { display: block; height: 100%; background: var(--amber); text-decoration: none; }
+.mhave { display: flex; flex-direction: column; align-items: center; min-width: 44px; line-height: 1.1; }
+.mhave .num { font-size: 24px; font-weight: 800; } .mhave .faint { font-size: 11px; }
+.mrow .mk { gap: 6px; }
+.mrow .mk button { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 66px; min-height: 52px; padding: 5px 8px; border-radius: 8px; font-size: 12px; }
+.mrow .mk .mv { font-size: 14px; font-weight: 800; }
+.mrow .mk .mp { font-size: 13px; display: inline-flex; align-items: center; gap: 2px; }
+.mrow .mk .mp .ic, .mrow .mk .tc .ic { width: 16px; height: 16px; }
+.mrow .mk .tc { font-size: 11px; opacity: .85; display: inline-flex; align-items: center; }
+.mxh { font-size: 13px; font-weight: 700; color: var(--ink3); margin-bottom: 4px; }
+.market .btn.small { min-height: 38px; font-size: 14px; }
+@media (max-width: 520px) { .mrow { grid-template-columns: 40px minmax(0, 1fr) auto; } .mhave { display: none; } .mico { width: 40px; height: 40px; } .mrow .mk button { min-width: 58px; } }
