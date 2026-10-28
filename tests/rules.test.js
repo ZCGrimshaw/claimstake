@@ -428,5 +428,11 @@ t('one of each building: owned building is not eligible and cannot be built', ()
   ok(!HS.eligible(s, tile, false, p).includes(id)); ok(HS.eligible(s, tile, false, s.players[1]).includes(id));
   s.opts.oneEach = false; ok(HS.eligible(s, tile, false, p).includes(id));
 });
+t('skipBuild: a stuck player can give up the lot and gets the bid back', () => {
+  const s = mk(2); const p = s.players[0]; const before = p.silver;
+  s.phase = 'resolve'; s.steps = [{ k: 'build', p: 0, auction: 0, refund: 3, bid: 3, noBonusOnFail: true }];
+  const bad = HS.apply(s, { type: 'skipBuild', p: 1 }); ok(!bad.ok);
+  const r = HS.apply(s, { type: 'skipBuild', p: 0 }); ok(r.ok, r.err); eq(p.silver, before + 3);
+});
 console.log(`rules: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

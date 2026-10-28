@@ -360,7 +360,7 @@
         foot: needChips(q, p) + `<div class="${q.ok ? 'faint' : ''}" style="font-size:13px">${q.ok ? (q.T ? `Buys goods: ${q.T} trade, ${q.S} silver` : 'You have everything') : '<span style="color:var(--bad)">' + q.why + '</span>'}</div>` });
     }).join('');
     let pay = '';
-    if (sel) {
+    if (sel && HS.quoteBuild(s, p, sel).ok) {
       const q = HS.quoteBuild(s, p, sel);
       const extraBid = extra && s.opts.trainExtra === 'bid' ? st.bid : 0, total = q.S + extraBid;
       const goldFree = Math.max(0, p.res.gold + q.buy.gold - q.need.gold - q.goldCL);
@@ -368,8 +368,11 @@
       pay = `<div class="notice">${needChips(q, p)}${BMAP[sel].name}: ${buys.length ? 'you will buy ' + buys.join(', ') + ' using ' + q.T + ' trade token' + (q.T > 1 ? 's' : '') + ' and ' + q.S + ' silver' : 'paid from your stock'}${extraBid ? ', plus the bid again (' + extraBid + ')' : ''}.${q.landingPaid.copper + q.landingPaid.livestock ? ' River Landing: gold stands in for copper or livestock.' : ''}</div>`
         + payPanel(p, total, { act: 'buildGo', title: 'Silver for the build', btn: 'Build ' + BMAP[sel].name, maxGold: goldFree, maxTrades: p.trade - q.T, blocked: !q.ok });
     }
+    const okIds = ids.filter(id => HS.quoteBuild(s, p, id).ok);
+    const stuck = sel && !HS.quoteBuild(s, p, sel).ok;
+    const hint = stuck ? `<div class="notice" style="border-color:var(--bad)"><b>${BMAP[sel].name} is out of reach right now.</b> ${okIds.length ? 'Pick another building you can afford: ' + okIds.map(id => '<button class="linkbtn" data-act="pick" data-id="' + id + '">' + BMAP[id].name + '</button>').join(', ') + '.' : 'You cannot afford any building here.'} ${extra ? '' : 'Or give up the lot and take your bid back below.'}</div>` : '';
     return `<div class="table"><div class="hd"><h2>${extra ? 'Extra building' : 'Build on ' + auc.tile.name}</h2><span class="muted">${extra ? 'Junction Depot lets you build one more of any type.' : 'Choose a ' + auc.tile.types.map(t => D.TYPES[t]).join(' or ') + ' building.'}</span></div>
-      <div class="cards">${cards}</div>${pay}${extra ? '<div class="row"><button class="btn ghost" data-act="skipExtra">Skip the extra building</button></div>' : ''}</div>`;
+      <div class="cards">${cards}</div>${hint}${pay}${extra ? '' : `<div class="row"><button class="btn ghost" data-act="skipBuild" data-tip="Can't or don't want to build? Give up this lot and get your winning bid back as silver.">Give up this lot and take my ${st.refund} silver back</button></div>`}${extra ? '<div class="row"><button class="btn ghost" data-act="skipExtra">Skip the extra building</button></div>' : ''}</div>`;
   }
   function resolvePanel(s, p) {
     const st = s.steps[0], auc = st.auction != null ? s.auctions[st.auction] : null;
@@ -749,9 +752,10 @@
     pt(el) { App.ui.pay.trades += +el.dataset.d; render(); },
     payWages() { dispatch({ type: 'payWages', plan: { gold: App.ui.pay.gold, trades: App.ui.pay.trades } }, 'coin'); },
     payBid() { dispatch({ type: 'payBid', plan: { gold: App.ui.pay.gold, trades: App.ui.pay.trades } }, 'coin'); },
-    pick(el) { App.ui.sel = el.dataset.id; App.ui.pay = { gold: 0, trades: 0 }; render(); },
+    pick(el) { App.ui.sel = App.ui.sel === el.dataset.id ? null : el.dataset.id; App.ui.pay = { gold: 0, trades: 0 }; render(); },
     buildGo() { const id = App.ui.sel; if (id && dispatch({ type: 'build', id, plan: { gold: App.ui.pay.gold, trades: App.ui.pay.trades } }, 'build')) App.ui.sel = null; },
     skipExtra() { dispatch({ type: 'skipExtra' }); },
+    skipBuild() { App.ui.sel = null; dispatch({ type: 'skipBuild' }); },
     // bidding
     bid(el) { dispatch({ type: 'bid', auction: +el.dataset.a, amount: +el.dataset.amt }, 'coin'); },
     pass(el) { dispatch({ type: 'pass', reward: el.dataset.reward || undefined, res: el.dataset.res }); },

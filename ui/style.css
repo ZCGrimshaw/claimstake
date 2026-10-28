@@ -373,3 +373,5 @@ details.fold > summary { cursor: pointer; font-family: var(--font-d); font-weigh
 .fr .chip .ic { width: 20px; height: 20px; }
 .fr .chip .cw { font-weight: 600; color: var(--ink2); }
 .fr .chip .num { font-size: 15px; }
+
+.linkbtn { background: none; border: 0; padding: 0; color: var(--amber2, var(--amber)); font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }

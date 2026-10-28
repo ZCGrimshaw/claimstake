@@ -402,6 +402,17 @@
       case 'pass': return doPass(s, p, a);
       case 'payBid': return doPayBid(s, p, a);
       case 'build': return doBuildAction(s, p, a);
+      case 'skipBuild': {
+        // escape hatch: a player who cannot (or no longer can) finish a build gives up the lot and gets the bid back
+        const st = s.steps[0];
+        if (s.phase !== 'resolve' || !st || st.k !== 'build' || st.p !== a.p) return err('no build pending');
+        const auc = s.auctions[st.auction];
+        p.silver += st.refund; log(s, `${p.name} gives up building on ${auc.tile.name}; the bid is refunded.`);
+        ev(s, 'refund', p.id, st.refund);
+        s.steps.shift();
+        s.steps = s.steps.filter(x => !(x.k === 'tileBonus' && x.auction === st.auction));
+        advanceResolve(s); return { ok: true };
+      }
       case 'skipExtra': {
         const st = s.steps[0];
         if (s.phase !== 'resolve' || !st || st.k !== 'extra' || st.p !== a.p) return err('no');
