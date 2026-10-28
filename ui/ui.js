@@ -32,7 +32,7 @@
   const lsDel = k => { delete mem[k]; try { localStorage.removeItem(k); } catch (e) { /* ignore */ } };
   function loadJSON(k, d) { try { const v = lsGet(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
 
-  const prof = Object.assign({ games: 0, wins: 0, best: 0, streak: 0, bestStreak: 0, ach: {}, daily: {}, sound: false, theme: '', last: null }, loadJSON('claimstake.prof', {}));
+  const prof = Object.assign({ sets: [], games: 0, wins: 0, best: 0, streak: 0, bestStreak: 0, ach: {}, daily: {}, sound: false, theme: '', last: null }, loadJSON('claimstake.prof', {}));
   const saveProf = () => lsSet('claimstake.prof', JSON.stringify(prof));
 
   const ACH = [
@@ -580,6 +580,24 @@
   }
 
   // ------------------------------------------------------------ menu
+  // ---- saved rule sets: remembered per browser, named by the player
+  const fullOpts = o => Object.assign(HS.defaultOpts(), o || {});
+  const sameOpts = (a, b) => D.OPTION_DEFS.every(d => fullOpts(a)[d.key] === fullOpts(b)[d.key]);
+  const persistMenu = () => { const m = App.menu; prof.last = { menu: { n: m.n, seats: m.seats, opts: m.opts, seed: m.seed } }; saveProf(); };
+  function ruleSetBar(opts) {
+    const sets = prof.sets || [];
+    const cur = sets.find(x => sameOpts(x.opts, opts)), isDef = sameOpts({}, opts);
+    const val = cur ? 'set:' + cur.id : isDef ? 'default' : 'custom';
+    const nDiff = D.OPTION_DEFS.filter(d => fullOpts(opts)[d.key] !== d.def).length;
+    return `<div class="rsets"><div class="row wrap"><label for="rset" style="font-weight:700">Rule set</label>
+      <select id="rset" data-f="rset" aria-label="Choose a saved rule set" style="width:auto;flex:1;min-width:160px">
+        <option value="default" ${val === 'default' ? 'selected' : ''}>Standard rules</option>
+        ${sets.map(x => `<option value="set:${x.id}" ${val === 'set:' + x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}
+        ${val === 'custom' ? `<option value="custom" selected>Custom (${nDiff} changed, not saved)</option>` : ''}</select>
+      ${cur ? '<button class="btn ghost small" data-act="delset" data-tip="Delete this saved rule set.">Delete</button>' : ''}</div>
+      ${cur ? '' : `<div class="row wrap" style="margin-top:6px"><input type="text" id="setname" maxlength="24" placeholder="Name these rules, e.g. Friday night" aria-label="Name for this rule set" style="flex:1;min-width:160px"><button class="btn small" data-act="saveset" ${nDiff || val === 'custom' ? '' : 'disabled'} data-tip="Save the rules below under this name so you can pick them again for any future game.">Save rule set</button></div>`}
+      <p class="faint" style="margin:6px 0 0">Your last rules are remembered automatically. Saved sets live in this browser.</p></div>`;
+  }
   function optSelect(d, val) {
     const idx = Math.max(0, d.choices.findIndex(c => c[0] === val));
     return `<div class="opt"><div class="row wrap"><b>${d.label}</b><span class="tag ${d.tag}">${d.tag === 'confirmed' ? 'from the rules' : d.tag === 'designed' ? 'my call' : 'interface'}</span></div>
@@ -604,7 +622,7 @@
           <div class="grp" style="display:grid;gap:8px;margin-top:10px">${Array.from({ length: m.n }, (_, i) => seat(i)).join('')}</div>${lvlDesc}
           <div class="field" style="margin-top:10px"><label>Seed (optional)</label><input type="text" data-f="seed" value="${esc(m.seed)}" placeholder="Leave blank for a random deal"></div>
           <p class="faint">More than one human plays hot-seat: the screen hides between turns.</p></div>
-        <div class="panel"><h3>Rules and options</h3><p class="faint" style="margin-top:0">Where the rules were unclear, you can choose. Defaults are my best reading.</p>${D.OPTION_DEFS.map(d => optSelect(d, opts[d.key])).join('')}</div>
+        <div class="panel"><h3>Rules and options</h3><p class="faint" style="margin-top:0">Where the rules were unclear, you can choose. Defaults are my best reading.</p>${ruleSetBar(opts)}${D.OPTION_DEFS.map(d => optSelect(d, opts[d.key])).join('')}</div>
         <div class="panel"><h3>Daily Claim</h3><p class="muted" style="margin-top:0">One shared deal per day, you against a Land Baron. Same cards for everyone, so scores compare.</p>
           <div class="stats"><div class="stat"><b>${dailyStreak()}</b><span>Day streak</span></div><div class="stat"><b>${dsc != null ? dsc : '-'}</b><span>Today's best</span></div></div>
           <h3 style="margin:14px 0 8px">Record</h3><div class="stats"><div class="stat"><b>${prof.games}</b><span>Games</span></div><div class="stat"><b>${prof.wins}</b><span>Wins</span></div><div class="stat"><b>${prof.best || '-'}</b><span>Best score</span></div><div class="stat"><b>${prof.streak}</b><span>Win streak</span></div></div></div>
@@ -645,7 +663,18 @@
   const P = () => viewer();
   const ACT = {
     // menu
-    pn(el) { App.menu.n = +el.dataset.n; render(); },
+    pn(el) { App.menu.n = +el.dataset.n; persistMenu(); render(); },
+    saveset() {
+      const inp = document.getElementById('setname'), name = ((inp && inp.value) || '').trim().slice(0, 24);
+      if (!name) { toast('Type a name for this rule set first.'); if (inp) inp.focus(); return; }
+      const opts = fullOpts(App.menu.opts), list = prof.sets || (prof.sets = []), ex = list.find(x => x.name.toLowerCase() === name.toLowerCase());
+      if (ex) ex.opts = opts; else if (list.length >= 20) { toast('You can keep up to 20 rule sets. Delete one first.'); return; } else list.push({ id: Date.now().toString(36), name, opts });
+      saveProf(); App.menu.opts = opts; persistMenu(); toast('Saved rule set "' + name + '".'); render();
+    },
+    delset() {
+      const cur = (prof.sets || []).find(x => sameOpts(x.opts, App.menu.opts)); if (!cur) return;
+      prof.sets = prof.sets.filter(x => x !== cur); saveProf(); toast('Deleted "' + cur.name + '". Your current rules are unchanged.'); render();
+    },
     start() { launch(false); },
     daily() { launch(true); },
     continue() {
@@ -764,15 +793,20 @@
     const t = ev.target;
     if (t.dataset.opt) {
       const d = D.OPTION_DEFS.find(x => x.key === t.dataset.opt);
-      App.menu.opts[d.key] = d.choices[+t.value][0]; return;
+      App.menu.opts[d.key] = d.choices[+t.value][0]; persistMenu(); render(); return;
+    }
+    if (t.dataset.f === 'rset') {
+      if (t.value === 'default') App.menu.opts = {};
+      else if (t.value.startsWith('set:')) { const x = (prof.sets || []).find(y => 'set:' + y.id === t.value); if (x) App.menu.opts = Object.assign({}, x.opts); }
+      persistMenu(); render(); return;
     }
     if (t.dataset.seat != null) {
       const i = +t.dataset.seat, f = t.dataset.f;
       if (f === 'kind') { App.menu.seats[i].kind = t.value === 'human' ? 'human' : +t.value; if (t.value === 'human' && !App.menu.seats[i].name) App.menu.seats[i].name = 'Player ' + (i + 1); render(); }
       else App.menu.seats[i].name = t.value;
-      return;
+      persistMenu(); return;
     }
-    if (t.dataset.f === 'seed') App.menu.seed = t.value;
+    if (t.dataset.f === 'seed') { App.menu.seed = t.value; persistMenu(); }
     if (t.dataset.f === 'oname') { prof.name = t.value.slice(0, 14); saveProf(); }
     if (t.dataset.f === 'ocode') App.ui.code = t.value.toUpperCase().slice(0, 4);
   });
