@@ -55,6 +55,7 @@ h1, h2, h3, h4 { font-family: var(--font-d); margin: 0; font-weight: 700; text-w
 
 /* ---------- buttons, chips */
 .btn { background: var(--amber); color: var(--on-amber); border: 0; border-radius: 6px; padding: 9px 16px; font-weight: 700; letter-spacing: .01em; min-height: 40px; box-shadow: 0 2px 0 var(--amber2); transition: transform .08s, filter .15s; }
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .btn:hover:not(:disabled) { filter: brightness(1.07); }
 .btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 0 var(--amber2); }
 .btn:disabled { background: var(--panel2); color: var(--ink3); box-shadow: none; cursor: not-allowed; }
@@ -2939,7 +2940,7 @@ window.ClaimSupa = function (cfg) {
           <h3 style="margin:14px 0 8px">Record</h3><div class="stats"><div class="stat"><b>${prof.games}</b><span>Games</span></div><div class="stat"><b>${prof.wins}</b><span>Wins</span></div><div class="stat"><b>${prof.best || '-'}</b><span>Best score</span></div><div class="stat"><b>${prof.streak}</b><span>Win streak</span></div></div></div>
         <div class="panel"><h3>Stakes earned</h3><div class="ach">${ACH.map(a => `<div class="${prof.ach[a[0]] ? 'got' : ''}"><b>${a[1]}</b>${a[2]}</div>`).join('')}</div></div>
       </div>
-      <details class="fold"><summary>How to play</summary><div style="display:grid;gap:6px;margin-top:8px">${D.RULE_NOTES.map(r => `<div class="row" style="align-items:flex-start"><span class="tag ${r[0]}">${r[0] === 'confirmed' ? 'rule' : 'my call'}</span><span>${r[1]}</span></div>`).join('')}</div></details>
+      <p style="text-align:center;margin:8px 0"><a class="btn ghost" href="claimstake-rules.pdf" target="_blank" rel="noopener">📄 Rule book (PDF)</a></p><details class="fold"><summary>How to play</summary><div style="display:grid;gap:6px;margin-top:8px">${D.RULE_NOTES.map(r => `<div class="row" style="align-items:flex-start"><span class="tag ${r[0]}">${r[0] === 'confirmed' ? 'rule' : 'my call'}</span><span>${r[1]}</span></div>`).join('')}</div></details>
       <p class="faint" style="text-align:center">Original theme and auction tiles. Building numbers follow the supplied reference table.</p>`;
   }
 
@@ -2949,8 +2950,8 @@ window.ClaimSupa = function (cfg) {
     let body = '';
     if (m.type === 'bld') body = `<h2>${BMAP[m.id].name}</h2>${bcard(m.id, { left: s ? s.bsup[m.id] : null })}<div class="row"><button class="btn" data-act="close">Close</button></div>`;
     else if (m.type === 'opp') { const p = s.players[m.p]; body = `<h2>${esc(p.name)}</h2>${sceneHTML(p, { assign: false })}<div class="row wrap">${s.opts.hiddenInfo !== false ? '<span class="faint">Their silver, goods and trade tokens are hidden until the game ends.</span>' : RES.filter(r => p.res[r]).map(r => resChip(r, p.res[r])).join('') || '<span class="faint">No goods</span>'}</div><div class="row"><button class="btn" data-act="close">Close</button></div>`; }
-    else if (m.type === 'menu') body = `<h2>Menu</h2><div class="row wrap"><button class="btn" data-act="close">Resume</button><button class="btn ghost" data-act="rules">Rules</button><button class="btn ghost" data-act="tomenu">Save and leave</button><button class="btn warn" data-act="abandon">Abandon game</button></div>`;
-    else if (m.type === 'rules') body = `<h2>Rules in this game</h2><div style="display:grid;gap:6px">${D.RULE_NOTES.map(r => `<div class="row" style="align-items:flex-start"><span class="tag ${r[0]}">${r[0] === 'confirmed' ? 'rule' : 'my call'}</span><span>${r[1]}</span></div>`).join('')}</div><div class="row"><button class="btn" data-act="close">Close</button></div>`;
+    else if (m.type === 'menu') body = `<h2>Menu</h2><div class="row wrap"><button class="btn" data-act="close">Resume</button><button class="btn ghost" data-act="rules">Rules</button><a class="btn ghost" href="claimstake-rules.pdf" target="_blank" rel="noopener">📄 Rule book (PDF)</a><button class="btn ghost" data-act="tomenu">Save and leave</button><button class="btn warn" data-act="abandon">Abandon game</button></div>`;
+    else if (m.type === 'rules') body = `<h2>Rules in this game</h2><div style="display:grid;gap:6px">${D.RULE_NOTES.map(r => `<div class="row" style="align-items:flex-start"><span class="tag ${r[0]}">${r[0] === 'confirmed' ? 'rule' : 'my call'}</span><span>${r[1]}</span></div>`).join('')}</div><div class="row"><a class="btn ghost" href="claimstake-rules.pdf" target="_blank" rel="noopener">📄 Rule book (PDF)</a><button class="btn" data-act="close">Close</button></div>`;
     return `<div class="veil" data-act="veil"><div class="sheet ${m.type === 'opp' ? 'wide' : ''}" role="dialog" aria-modal="true">${body}</div></div>`;
   }
 
